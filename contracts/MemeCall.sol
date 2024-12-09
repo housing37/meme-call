@@ -81,6 +81,23 @@ contract MemeCall {
 
     }
 
+    // ref: SDD_meme-comp_112524_1855.pdf
+    // passive rewards (for winners)
+    // - any EOA that actively possess a minted NFT,
+    //      will earn a small % of each competition prize pool 
+    // - note: winning a competition is NOT required for this
+    //      (ie. provides real world value & incentive for holding & trading our NFTs)
+    // active rewards (for winning + voting)
+    // - winners get minted 'some amount’ of voter token for each competition won 
+    // - winners earn a large % of price pool won
+    // - winners get their meme minted into an NFT
+    // - voters get minted 'some amount’ of voter token for each competition vote 
+    // - voters earn a small % of each prize pool they voted in
+    //      note: the ‘competition maker’ earns an extra small % of that prize pool
+    function getMyRewardsOwed() external returns() {
+
+    }
+
     /* -------------------------------------------------------- */
     /* PUBLIC - UI mutators
     /* -------------------------------------------------------- */
@@ -90,6 +107,16 @@ contract MemeCall {
     // - they set a USD amount entry fee (ie. $10.00)
     // - they set a submission time frame + voting time aloud (ie. 1 week to submit memes + 24hrs for voting)
     function createNewMemeCall() external {
+
+    }
+
+    // ref: SDD_meme-comp_112524_1855.pdf
+    // The public may freely view a list of open competitions on the dapp
+    // - “Meme Creators” choose one to participate in & submit a url link to their meme
+    // - the url may be from any social media or HTTP server in the world, etc.
+    // - they must also pay the entry free along with their submission
+    // - can pay in any ERC20 token (amnt value must = the USD entry fee amnt)
+    function submitMemeCallEntry() external {
 
     }
 
@@ -114,7 +141,6 @@ contract MemeCall {
         // - winners get minted 'some amount’ of voter token for each competition won 
         // - winners earn a large % of price pool won
         // - winners get their meme minted into an NFT
-
     }
 
     // ref: SDD_meme-comp_112524_1855.pdf
@@ -124,7 +150,7 @@ contract MemeCall {
     // - note: winning a competition is NOT required for this
     //      (ie. provides real world value & incentive for holding & trading our NFTs)
     function claimRewardPassive() external {
-        // LEFT OFF HERE ... should rewards be transferrable along with their NFT?
+        // LEFT OFF HERE ... should passive rewards be transferrable along with their NFT?
         //      (should the contract track passive rewards by NFT or by EOA holding the NFT?)
         //  ie. should EOAs be able to claim rewards owed to them AFTER they have transferred their NFT to someone else?
         //      or should the rewards be transferrable along with the NFT?
