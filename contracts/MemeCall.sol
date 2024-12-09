@@ -10,6 +10,7 @@
 //  uint64 max = ~18,000Q -> 18,446,744,073,709,551,615
 pragma solidity ^0.8.24;
 
+import "./ICallConfig.sol";
 
 contract MemeCall {
     /* -------------------------------------------------------- */
@@ -18,10 +19,23 @@ contract MemeCall {
     // address public constant TOK_WPLS = address(0xA1077a294dDE1B09bB078844df40758a5D0f9a27);
     // address public constant BURN_ADDR = address(0x0000000000000000000000000000000000000369);
 
+    /* GLOBALS (CALLIT) */
+    string public tVERSION = '0.74';
+    bool private FIRST_ = true;
+    address public ADDR_CONFIG; // set via CONF_setConfig
+    ICallConfig private CONF;
+    ICallMarket private MARKET; // set via CONF_setConfig
+    // ICallitVoter private VOTER; // set via CONF_setConfig
+    ICallLib private LIB;     // set via CONF_setConfig
+    // ICallitVault private VAULT; // set via CONF_setConfig
+    // ICallitDelegate private DELEGATE; // set via CONF_setConfig
+    // ICallitToken private CALL;  // set via CONF_setConfig
+    uint64 private CALL_INIT_MINT;
+
     /* -------------------------------------------------------- */
     /* EVENTS
     /* -------------------------------------------------------- */
-
+    event MarketCreated(address _maker, uint256 _markNum, address _markHash, string _topic, string _category, uint64 _usdEntryFee, uint256 _dtSubmitDeadline, uint256 _secVoteTime, uint256 _blockTime, bool _live);
 
     /* -------------------------------------------------------- */
     /* CONSTRUCTOR
@@ -38,6 +52,29 @@ contract MemeCall {
     modifier onlyKeeper() {
         require(msg.sender == CONF.KEEPER(), "!keeper :p");
         _;
+    }
+    modifier onlyConfig() { 
+        // allows 1st onlyConfig attempt to freely pass
+        //  NOTE: don't waste this on anything but CONF_setConfig
+        if (!FIRST_) {
+            require(msg.sender == address(CONF), ' !CONF :p '); // first validate CONF
+            _; // then proceed to set CONF++
+        } else {
+            _; // first proceed to set CONF++
+            _mintCallToksEarned(CONF.KEEPER(), CALL_INIT_MINT); // then mint CALL to keeper
+            FIRST_ = false; // never again
+        } 
+    }
+    function CONF_setConfig(address _conf) external onlyConfig() {
+        require(_conf != address(0), ' !addy :< ');
+        ADDR_CONFIG = _conf;
+        CONF = ICallConfig(ADDR_CONFIG);
+        MARKET = ICallMarket(CONF.ADDR_MARKET());
+        // VOTER = ICallitVoter(CONF.ADDR_VOTER());
+        LIB = ICallLib(CONF.ADDR_LIB());
+        // VAULT = ICallitVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
+        // DELEGATE = ICallitDelegate(CONF.ADDR_DELEGATE());
+        // CALL = ICallitToken(CONF.ADDR_CALL());
     }
 
     // ref: SDD_meme-comp_112524_1855.pdf
@@ -106,7 +143,50 @@ contract MemeCall {
     // - they choose any topic (ie. “best meme to support $BEAR on PulseChain”)
     // - they set a USD amount entry fee (ie. $10.00)
     // - they set a submission time frame + voting time aloud (ie. 1 week to submit memes + 24hrs for voting)
-    function createNewMemeCall() external {
+    function createNewMemeCall(string calldata _topic, 
+                                string calldata _category,
+                                string calldata _rules,
+                                string calldata _imgUrl,
+                                uint64 _usdEntryFee, 
+                                uint256 _dtSubmitDeadline, 
+                                uint256 _secVoteTime) external {
+        // validate input params
+        require(block.timestamp < _dtSubmitDeadline && _secVoteTime >= CONF.SEC_DEFAULT_VOTE_TIME(), ' invalid dt|vt settings :[] ');
+
+        // check for admin defualt vote time, update _dtResultVoteEnd accordingly
+        if (CONF.USE_SEC_DEFAULT_VOTE_TIME()) _secVoteTime = _dtSubmitDeadline + CONF.SEC_DEFAULT_VOTE_TIME();
+
+        // initilize/validate market number for struct MARKET tracking
+        uint256 mark_num = MARKET.getMarketCntForMaker(msg.sender);
+        require(mark_num <= CONF.MAX_EOA_MARKETS(), ' > MAX_EOA_MARKETS :O ');
+
+        // save this market and emit log (generates new market hash)
+        ICallitLib.MARKET memory mark = ICallitLib.MARKET({maker:_sender, 
+                                                marketNum:mark_num, 
+                                                marketHash:LIB.generateAddressHash(msg.sender, string(abi.encodePacked(mark_num))),
+                                                topic:_topic,
+
+                                                // marketInfo:MARKET_INFO("", "", ""),
+                                                category:_category,
+                                                rules:_rules, 
+                                                imgUrl:_imgUrl, 
+
+                                                // marketDatetimes:ICallitLib.MARKET_DATETIMES(_dtCallDeadline, _dtResultVoteStart, _dtResultVoteEnd), 
+                                                dtSubmitDeadline:_dtSubmitDeadline,
+                                                secVoteTime:_secVoteTime,
+                                                // marketResults:mark_results,
+                                                marketResults:VAULT.createDexLP(_sender, _mark_num, _resultLabels, net_usdAmntLP, CONF.RATIO_LP_TOK_PER_USD()), 
+                                                winningVoteResultIdx:0, 
+                                                blockTimestamp:block.timestamp, 
+                                                blockNumber:block.number, 
+                                                live:true}); // true = live
+
+        // save new market in MARKET
+        MARKET.storeNewMarket(mark, msg.sender); // sets HASH_MARKET
+
+        emit MarketCreated(msg.sender, mark_num, mark.marketHash, _topic, _category, _usdEntryFee, _dtSubmitDeadline, _secVoteTime, block.timestamp, true); // true = live
+
+        // NOTE: market maker is minted $CALL in 'closeMarketForTicket'
 
     }
 
