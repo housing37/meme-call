@@ -2,6 +2,11 @@
 # dex routers
     list of dex routers to interface with for arb
 
+## PulseChain sac addresses
+    ref: https://www.reddit.com/r/Pulsechain/comments/1bmrlev/does_anyone_know_the_sacrifice_wallet_address/?rdt=64817
+        Pls: 0x9Cd83BE15a79646A3D22B81fc8dDf7B7240a62cB
+        Plsx: 0x075e72a5edf65f0a5f44699c7654c1a76941ddc8
+        
 ## Balancer dex 
     PC -> balancer max loan amnts (found in sol logs `balanceOf(address)`: `0x70a08231`)
         max amnt: 114,983,659.41104437 WETH (greater fails w/ "Fail with revert message: 'BAL#528'")
