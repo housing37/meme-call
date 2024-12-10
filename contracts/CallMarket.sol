@@ -25,7 +25,7 @@ contract CallMarket {
     bool private FIRST_ = true;
     address public ADDR_CONFIG; // set via CONF_setConfig
     ICallConfig private CONF; // set via CONF_setConfig
-    // ICallitVoter private VOTER; // set via CONF_setConfig
+    ICallVoter private VOTER; // set via CONF_setConfig
     // ICallitLib private LIB;     // set via CONF_setConfig
     // ICallitVault private VAULT; // set via CONF_setConfig
     // ICallitDelegate private DELEGATE; // set via CONF_setConfig
@@ -40,6 +40,7 @@ contract CallMarket {
     mapping(address => address[]) private ACCT_MARKET_HASHES; // store maker to list of market hashes
     mapping(address => ICallitLib.MARKET) public HASH_MARKET; // store market hash to its MARKET
     address[] public MARKET_HASH_LST; // store list of all market haches
+    address[] public LIVE_MARKET_LST;
 
     // market makers (etc.) can set their own handles
     mapping(address => string) public ACCT_HANDLES;
@@ -75,7 +76,7 @@ contract CallMarket {
         require(_conf != address(0), ' !addy :< ');
         ADDR_CONFIG = _conf;
         CONF = ICallConfig(ADDR_CONFIG);
-        // VOTER = ICallitVoter(CONF.ADDR_VOTER());
+        VOTER = ICallVoter(CONF.ADDR_VOTER());
         // LIB = ICallitLib(CONF.ADDR_LIB());
         // VAULT = ICallitVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
         // // DELEGATE = ICallitDelegate(CONF.ADDR_DELEGATE());
@@ -101,10 +102,24 @@ contract CallMarket {
             return MARKET_HASH_LST;
         }
     }
+    function getLiveMarketCnt() external view returns(uint256) {
+        return LIVE_MARKET_LST.length;
+    }
+    function getLiveMarkets() external view returns(address[] memory) {
+        return LIVE_MARKET_LST;
+    }
 
     /* -------------------------------------------------------- */
     /* PUBLIC - admin mutators
     /* -------------------------------------------------------- */
+    function editLiveTicketList(address _marketHash, bool _add) external onlyVault {
+        if (_add) {
+            LIVE_MARKET_LST = LIB._addAddressToArraySafe(_marketHash, LIVE_MARKET_LST, true); // true = no dups
+        } else {
+            LIVE_MARKET_LST = LIB._remAddressFromArray(_marketHash, LIVE_MARKET_LST);
+        }
+        VOTER.set_LIVE_MARKET_COUNT(LIB._uint64_from_uint256(LIVE_MARKET_LST.length));
+    }
     function storeNewMarket(ICallitLib.MARKET memory _mark, address _maker) external onlyFactory {
         require(_maker != address(0) && _mark.marketHash != address(0), ' bad maker | hash :*{ ');
         ACCT_MARKET_HASHES[_maker].push(_mark.marketHash);

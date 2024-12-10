@@ -25,7 +25,7 @@ contract MemeCall {
     address public ADDR_CONFIG; // set via CONF_setConfig
     ICallConfig private CONF;
     ICallMarket private MARKET; // set via CONF_setConfig
-    // ICallitVoter private VOTER; // set via CONF_setConfig
+    ICallVoter private VOTER; // set via CONF_setConfig
     ICallLib private LIB;     // set via CONF_setConfig
     // ICallitVault private VAULT; // set via CONF_setConfig
     // ICallitDelegate private DELEGATE; // set via CONF_setConfig
@@ -70,7 +70,7 @@ contract MemeCall {
         ADDR_CONFIG = _conf;
         CONF = ICallConfig(ADDR_CONFIG);
         MARKET = ICallMarket(CONF.ADDR_MARKET());
-        // VOTER = ICallitVoter(CONF.ADDR_VOTER());
+        VOTER = ICallVoter(CONF.ADDR_VOTER());
         LIB = ICallLib(CONF.ADDR_LIB());
         // VAULT = ICallitVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
         // DELEGATE = ICallitDelegate(CONF.ADDR_DELEGATE());
@@ -86,10 +86,16 @@ contract MemeCall {
         _;
     }
 
-
     /* -------------------------------------------------------- */
     /* PUBLIC - UI accessors
     /* -------------------------------------------------------- */
+    // VOTER support
+    function getMyVoterHash(address _sender) external view returns(address) {
+        // *WARNING* user must have their wallet conencted to use this function
+        //  ie. read request must come from user's EOA and not the RPC server default assigned for 'view' requests
+        return VOTER.getVoterHash(msg.sender); // executes require checks
+    }
+
     // ref: SDD_meme-comp_112524_1855.pdf
     // The public may freely view a list of open competitions on the dapp
     // - “Meme Creators” choose one to participate in & submit a url link to their meme
@@ -138,6 +144,11 @@ contract MemeCall {
     /* -------------------------------------------------------- */
     /* PUBLIC - UI mutators
     /* -------------------------------------------------------- */
+    // VOTER support
+    function genMyVoterHash(address _sender) external onlyFactory {
+        VOTER.genVoterHash(msg.sender); // executes require checks
+    }
+
     // ref: SDD_meme-comp_112524_1855.pdf
     // Any “Voter” may create a competition
     // - they choose any topic (ie. “best meme to support $BEAR on PulseChain”)
@@ -179,7 +190,9 @@ contract MemeCall {
                                                 winningVoteResultIdx:0, 
                                                 blockTimestamp:block.timestamp, 
                                                 blockNumber:block.number, 
-                                                status:0}); // status: 0 = open, 1 = pending, 2 = closed
+                                                status:0}, // status: 0 = open, 1 = pending, 2 = closed
+                                                live:true // true = !closed
+                                                ); 
 
         // save new market in MARKET
         MARKET.storeNewMarket(mark, msg.sender); // sets HASH_MARKET
@@ -197,6 +210,10 @@ contract MemeCall {
     // - they must also pay the entry free along with their submission
     // - can pay in any ERC20 token (amnt value must = the USD entry fee amnt)
     function submitMemeCallEntry() external {
+
+    }
+
+    function castVoteForMemeCall(address _marketHash) external {
 
     }
 
