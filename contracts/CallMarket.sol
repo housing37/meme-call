@@ -11,7 +11,8 @@
 pragma solidity ^0.8.24;
 
 import './ICallConfig.sol';
-// import './ICallitVault.sol';
+import "./ICallLib.sol";
+// import './ICallitVault.sol'; // import "./ICallitLib.sol";
 
 contract CallMarket {
     /* -------------------------------------------------------- */
@@ -38,7 +39,7 @@ contract CallMarket {
     //  ref: https://docs.soliditylang.org/en/v0.8.0/types.html#mappings
     mapping(string => address[]) private CATEGORY_MARK_HASHES; // store category to list of market hashes
     mapping(address => address[]) private ACCT_MARKET_HASHES; // store maker to list of market hashes
-    mapping(address => ICallitLib.MARKET) public HASH_MARKET; // store market hash to its MARKET
+    mapping(address => ICallLib.MARKET) public HASH_MARKET; // store market hash to its MARKET
     address[] public MARKET_HASH_LST; // store list of all market haches
     address[] public LIVE_MARKET_LST;
 
@@ -89,6 +90,11 @@ contract CallMarket {
     function getMarketCntForMaker(address _maker) external view returns(uint256) {
         // NOTE: MAX_EOA_MARKETS is uint64
         return ACCT_MARKET_HASHES[_maker].length;
+    }
+    function getMarketForHash(address _hash) public view returns(ICallitLib.MARKET memory) {
+        ICallLib.MARKET memory mark = HASH_MARKET[_hash];
+        require(mark.maker != address(0), ' !maker :0 ');
+        return mark;
     }
     function getMarketHashesForMakerOrCategory(address _maker, string calldata _category) external view returns(address[] memory) {
         if (bytes(_category).length > 1) { // note: sending a single 'space', signals use _maker

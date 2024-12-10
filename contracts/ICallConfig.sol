@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-
+import "./ICallLib.sol";
 interface ICallVoter {
     // accessors
     function getVoterHash(address _sender) external view returns(address);
     function getResultVotesForMarketHash(address _markHash) external view returns(uint64[] memory);
-    function getMarketVotesForAcct(address _account, bool _paid) external view returns(ICallitLib.MARKET_VOTE[] memory);
+    function getMarketVotesForAcct(address _account, bool _paid) external view returns(ICallLib.MARKET_VOTE[] memory);
 
     // mutators
     function genVoterHash(address _sender) external;
     function set_LIVE_MARKET_COUNT(uint64 _cnt) external;
     function castVoteForMarketTicket(address _sender, address _senderTicketHash, address _markHash) external;
-    function moveMarketVoteToPaid(address _sender, uint64 _idxMove, ICallitLib.MARKET_VOTE calldata _m_vote) external;
+    function moveMarketVoteToPaid(address _sender, uint64 _idxMove, ICallLib.MARKET_VOTE calldata _m_vote) external;
 }
 interface ICallMarket {
     // accessors
     function getMarketCntForMaker(address _maker) external view returns(uint256);
+    function getMarketForHash(address _hash) external view returns(ICallLib.MARKET memory);
 
     // mutators
-    function storeNewMarket(ICallitLib.MARKET memory _mark, address _maker) external;
+    function storeNewMarket(ICallLib.MARKET memory _mark, address _maker) external;
 }
 interface ICallConfig {
     // accessors

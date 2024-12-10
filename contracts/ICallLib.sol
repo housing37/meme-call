@@ -33,6 +33,7 @@ interface ICallLib {
         string rules;
         string imgUrl;
         // MARKET_USD_AMNTS marketUsdAmnts;
+        uint64 usdEntryFee; // 6 decimal precision (eg. 1000000 = $1.00)
         // MARKET_DATETIMES marketDatetimes;
         uint256 dtSubmitDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
         uint256 secVoteTime; // seconds allowed for voting after submit deadline

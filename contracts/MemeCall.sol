@@ -158,7 +158,7 @@ contract MemeCall {
                                 string calldata _category,
                                 string calldata _rules,
                                 string calldata _imgUrl,
-                                uint64 _usdEntryFee, 
+                                uint64 _usdEntryFee, // 6 decimal precision (eg. 1000000 = $1.00)
                                 uint256 _dtSubmitDeadline, 
                                 uint256 _secVoteTime) external {
         // validate input params
@@ -181,7 +181,7 @@ contract MemeCall {
                                                 category:_category,
                                                 rules:_rules, 
                                                 imgUrl:_imgUrl, 
-
+                                                usdEntryFee:_usdEntryFee,
                                                 // marketDatetimes:ICallitLib.MARKET_DATETIMES(_dtCallDeadline, _dtResultVoteStart, _dtResultVoteEnd), 
                                                 dtSubmitDeadline:_dtSubmitDeadline,
                                                 secVoteTime:_secVoteTime,
@@ -208,8 +208,34 @@ contract MemeCall {
     // - “Meme Creators” choose one to participate in & submit a url link to their meme
     // - the url may be from any social media or HTTP server in the world, etc.
     // - they must also pay the entry free along with their submission
-    // - can pay in any ERC20 token (amnt value must = the USD entry fee amnt)
-    function submitMemeCallEntry() external {
+    //      - can pay in any ERC20 token (amnt value must = the USD entry fee amnt)
+    function submitMemeCallEntry(address _marketHash, string calldata _memeUrl, address _altTokSpend, uint256 _altAmnt) external {
+        require(_marketHash != address(0) && bytes(_memeUrl).length > 0, ' invalid args :( ');
+
+        // get market for this hash
+        ICallLib.MARKET memory mark = MARKET.getMarketForHash(_marketHash);
+
+        // get entry fee
+        uint64 usdEntryFee = mark.usdEntryFee;
+
+        // LEFT OFF HERE ... need to swap alt token for stable
+        //      then store that stable in VAULT (in a manner that tracks entry fee paid by msg.sender for _marketHash)
+        
+            // ref: legacy CallitFactory.sol -> buyCallTicketWithPromoCode
+            // // if sender provided 0 usd amnt, attempt alt token spend / deposit to account balance
+            // //  else, simply attempt to use curr account balance
+            // if (_usdAmnt == 0) { // use alt token
+            //     require(_altTokSpend != address(0x0), ' alt tok required :/ ');
+
+            //     // get alt tokens from sender EOA (fails/reverts if EOA doesn't do approval first)
+            //     //  then perform swap from alt to stable & store in vault
+            //     //  then set usd deposit amnt to usd amnt input var & get sender's new acct balance
+            //     IERC20(_altTokSpend).transferFrom(msg.sender, address(VAULT), _altAmnt);
+            //     _usdAmnt = VAULT.deposit(msg.sender, _altTokSpend, _altAmnt);
+            // }
+            // require(CONFM.ACCT_USD_BALANCES(msg.sender) >= _usdAmnt, ' low balance ;{ ');
+
+
 
     }
 
