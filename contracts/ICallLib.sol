@@ -40,7 +40,7 @@ interface ICallLib {
         uint16 winningVoteResultIdx; // calc winning idx from resultTokenVotes 
         uint256 blockTimestamp; // sec timestamp this market was created
         uint256 blockNumber; // block number this market was created
-        bool live;
+        uint8 status; // status: 0 = open, 1 = pending, 2 = closed
     }
     struct MARKET_USD_AMNTS {
         uint64 usdAmntLP; // total usd provided by maker (will be split amount 'resultOptionTokens')

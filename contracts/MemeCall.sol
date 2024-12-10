@@ -179,7 +179,7 @@ contract MemeCall {
                                                 winningVoteResultIdx:0, 
                                                 blockTimestamp:block.timestamp, 
                                                 blockNumber:block.number, 
-                                                live:true}); // true = live
+                                                status:0}); // status: 0 = open, 1 = pending, 2 = closed
 
         // save new market in MARKET
         MARKET.storeNewMarket(mark, msg.sender); // sets HASH_MARKET

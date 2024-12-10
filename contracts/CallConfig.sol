@@ -10,6 +10,9 @@
 //  uint64 max = ~18,000Q -> 18,446,744,073,709,551,615
 pragma solidity ^0.8.24;
 
+// import "./CallitTicket.sol"; // imports ERC20.sol // declares ICallitVault.deposit
+import "./ICallLib.sol";
+
 interface ISetConfig {
     function CONF_setConfig(address _conf) external;
 }
