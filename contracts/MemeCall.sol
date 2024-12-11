@@ -187,7 +187,7 @@ contract MemeCall {
                                                 category:_category,
                                                 rules:_rules, 
                                                 imgUrl:_imgUrl, 
-                                                usdEntryFee:_usdEntryFee,
+                                                marketUsdAmnts:ICallitLib.MARKET_USD_AMNTS(_usdEntryFee, 0, 0, 0, 0, 0, 0), 
                                                 // marketDatetimes:ICallitLib.MARKET_DATETIMES(_dtCallDeadline, _dtResultVoteStart, _dtResultVoteEnd), 
                                                 dtSubmitDeadline:_dtSubmitDeadline,
                                                 secVoteTime:_secVoteTime,
@@ -250,11 +250,11 @@ contract MemeCall {
         }
 
         // verify account usd balance can cover entry fee
-        require(MARKET.ACCT_USD_BALANCES(msg.sender) >= mark.usdEntryFee, ' low balance ;{ ');
+        require(MARKET.ACCT_USD_BALANCES(msg.sender) >= mark.marketUsdAmnts.usdEntryFee, ' low balance ;{ ');
 
         // TODO: append msg.sender and url/hash to array of EOAs paid w/ meme submission in MARKET struct
-        //       then debit  mark.usdEntryFee amount from ACCT_USD_BALANCES(sender)
-        //       then credit mark.usdEntryFee amount to ACCT_USD_BALANCES(_marketHash)
+        //       then debit  usdEntryFee amount from ACCT_USD_BALANCES(sender)
+        //       then credit usdEntryFee amount to ACCT_USD_BALANCES(_marketHash)
         //       then emit event log
         //  note: need to update MARKET struct to handle array of EOAs that have paid entry fees w/ their meme submission
         //  note: when rewards are claimed (via voter/winner/passive), 

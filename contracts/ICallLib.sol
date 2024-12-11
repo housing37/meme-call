@@ -32,8 +32,7 @@ interface ICallLib {
         string category;
         string rules;
         string imgUrl;
-        // MARKET_USD_AMNTS marketUsdAmnts;
-        uint64 usdEntryFee; // 6 decimal precision (eg. 1000000 = $1.00)
+        MARKET_USD_AMNTS marketUsdAmnts;
         // MARKET_DATETIMES marketDatetimes;
         uint256 dtSubmitDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
         uint256 secVoteTime; // seconds allowed for voting after submit deadline
@@ -45,11 +44,15 @@ interface ICallLib {
         bool live; // true = !closed
     }
     struct MARKET_USD_AMNTS {
-        uint64 usdAmntLP; // total usd provided by maker (will be split amount 'resultOptionTokens')
+        // uint64 usdAmntLP; // total usd provided by maker (will be split amount 'resultOptionTokens')
+        uint64 usdEntryFee; // 6 decimal precision (eg. 1000000 = $1.00)
         uint64 usdAmntPrizePool; // default 0, until market calls ends
-        uint64 usdAmntPrizePool_net; // default 0, until market voting ends
-        uint64 usdVoterRewardPool; // default 0, until close market calc
+        uint64 usdAmntPrizePool_net; // default 0, until market voting ends & winner declared
+        // uint64 usdVoterRewardPool; // default 0, until close market calc
+        uint64 usdRewardPoolVoter; // default 0, until close market calc
         uint64 usdRewardPerVote; // default 0, until close mark calc
+        uint64 usdRewardPoolNFT; // default 0, until close mark calc
+        uint64 usdRewardPerNFT; // default 0, until close mark calc
     }
     // struct MARKET_DATETIMES {
     //     uint256 dtCallDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
