@@ -191,8 +191,8 @@ contract MemeCall {
                                                 // marketDatetimes:ICallitLib.MARKET_DATETIMES(_dtCallDeadline, _dtResultVoteStart, _dtResultVoteEnd), 
                                                 dtSubmitDeadline:_dtSubmitDeadline,
                                                 secVoteTime:_secVoteTime,
-                                                // marketResults:mark_results,
-                                                marketResults:VAULT.createDexLP(_sender, _mark_num, _resultLabels, net_usdAmntLP, CONF.RATIO_LP_TOK_PER_USD()), 
+                                                // marketResults:VAULT.createDexLP(_sender, _mark_num, _resultLabels, net_usdAmntLP, CONF.RATIO_LP_TOK_PER_USD()), 
+                                                marketSubmits:ICallLib.MARKET_SUBMITS(new address[](0), new string[](0), new address[](0));
                                                 winningVoteResultIdx:0, 
                                                 blockTimestamp:block.timestamp, 
                                                 blockNumber:block.number, 
@@ -200,8 +200,12 @@ contract MemeCall {
                                                 live:true // true = !closed
                                                 ); 
 
-        // save new market in MARKET
+        // save new market in MARKET (also logs market hash)
         MARKET.storeNewMarket(mark, msg.sender); // sets HASH_MARKET
+
+        // log category created for this market hash (resets HASH_MARKET)
+        CONFM.setHashMarket(mark.marketHash, mark, _category);
+            // LEFT OFF HERE ... need exernal function for maker to update category if needed (limit 1 time)
 
         emit MarketCreated(msg.sender, mark_num, mark.marketHash, _topic, _category, _usdEntryFee, _dtSubmitDeadline, _secVoteTime, block.timestamp, true); // true = live
 
@@ -215,19 +219,11 @@ contract MemeCall {
     // - the url may be from any social media or HTTP server in the world, etc.
     // - they must also pay the entry free along with their submission
     //      - can pay in any ERC20 token (amnt value must = the USD entry fee amnt)
-    function submitMemeCallEntry(address _marketHash, string calldata _memeUrl, address _altTokSpend, uint256 _altAmnt) external {
+    function submitMemeCallEntry(address _marketHash, string calldata _memeUrl, address _memeHash, address _altTokSpend, uint256 _altAmnt) external {
         require(_marketHash != address(0) && bytes(_memeUrl).length > 0, ' invalid args :( ');
 
         // get market for this hash
         ICallLib.MARKET memory mark = MARKET.getMarketForHash(_marketHash);
-
-        // get entry fee
-        // uint64 usdEntryFee = mark.usdEntryFee;
-
-        // LEFT OFF HERE ... need to swap alt token for stable
-        //      then store that stable in VAULT (in a manner that tracks entry fee paid by msg.sender for _marketHash)
-        //  Q: does meme call need to use "mapping(address => uint64) public ACCT_USD_BALANCES;"?
-        //      and support native PLS tranfer deposits using "fallback()"?
 
         // ref: legacy CallitFactory.sol -> buyCallTicketWithPromoCode
         // if sender provided any _altAmnt, attempt alt token spend / deposit to account balance
@@ -243,22 +239,31 @@ contract MemeCall {
             IERC20(_altTokSpend).transferFrom(msg.sender, address(VAULT), _altAmnt);
 
             // swap from alt to stable & store in vault (updates sender's MARKET acct balance)
-            // LEFT OFF HERE .. need to store stable in VAULT
-            //  1) in a manner that tracks entry fee paid by msg.sender for _marketHash
-            //  2) in a manner that allows EOAs to claim USD rewards held
+            //  note: tracking entry fees & claiming USD rewards, handled via CallMarket.ACCT_USD_BALANCES
             usdDepositVal = VAULT.deposit(msg.sender, _altTokSpend, _altAmnt);
         }
 
         // verify account usd balance can cover entry fee
         require(MARKET.ACCT_USD_BALANCES(msg.sender) >= mark.marketUsdAmnts.usdEntryFee, ' low balance ;{ ');
 
-        // TODO: append msg.sender and url/hash to array of EOAs paid w/ meme submission in MARKET struct
-        //       then debit  usdEntryFee amount from ACCT_USD_BALANCES(sender)
-        //       then credit usdEntryFee amount to ACCT_USD_BALANCES(_marketHash)
-        //       then emit event log
-        //  note: need to update MARKET struct to handle array of EOAs that have paid entry fees w/ their meme submission
-        //  note: when rewards are claimed (via voter/winner/passive), 
-        //          they will be taken directly from ACCT_USD_BALANCES(_marketHash)
+        // append msg.sender & meme url & meme hash to MARKET struct (mark.marketSubmits)
+        //  ie. tracks entry fee paid by msg.sender for this _marketHash
+        mark.marketUsdAmnts.usdAmntPrizePool = DELEGATE.closeMarketCalls(mark); // NOTE: write to market
+        mark.marketSubmits.entryFeePaidEOAs = ICallLib.addAddressToArraySafe(msg.sender, mark.marketSubmits.entryFeePaidEOAs, true); // true = no dups
+        mark.marketSubmits.memeUrls = ICallLib.addStringToArraySafe(_memeUrl, mark.marketSubmits.memeUrls, true); // true = no dups
+        mark.marketSubmits.memeHashes = ICallLib.addAddressToArraySafe(_memeHash, mark.marketSubmits.memeHashes, true); // true = no dups
+
+        // reset HASH_MARKET with this mark changes
+        MARKET.setHashMarket(markHash, mark, ''); // '' = DO NOT add markHash to array for category in "mapping(string => address[]) CATEGORY_MARK_HASHES"
+
+        // debit usdEntryFee from msg.sender account & credit to _marketHash account
+        //  note: USD rewards claimed (via voter/winner/passive EOAs): taken directly from ACCT_USD_BALANCES(_marketHash)
+        MARKET.edit_ACCT_USD_BALANCES(msg.sender, mark.usdEntryFee, false); // false = sub
+        MARKET.edit_ACCT_USD_BALANCES(_marketHash, mark.usdEntryFee, true); // true = add
+
+        // TODO: validate VAULT balance still covers collective ACCT_USD_BALANCES owed (maybe)
+
+        // TODO: emit log event
     }
 
     function castVoteForMemeCall(address _marketHash) external {

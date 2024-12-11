@@ -19,6 +19,8 @@ interface ICallMarket {
     function getMarketForHash(address _hash) external view returns(ICallLib.MARKET memory);
 
     // mutators
+    function edit_ACCT_USD_BALANCES(address _acct, uint64 _usdAmnt, bool _add) external;
+    // function editLiveTicketList(address _ticket, address  _pairAddr, bool _add) external;
     function storeNewMarket(ICallLib.MARKET memory _mark, address _maker) external;
 }
 interface ICallConfig {

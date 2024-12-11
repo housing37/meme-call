@@ -36,7 +36,8 @@ interface ICallLib {
         // MARKET_DATETIMES marketDatetimes;
         uint256 dtSubmitDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
         uint256 secVoteTime; // seconds allowed for voting after submit deadline
-        MARKET_RESULTS marketResults;
+        // MARKET_RESULTS marketResults;
+        MARKET_SUBMITS marketSubmits; // meme submission details
         uint16 winningVoteResultIdx; // calc winning idx from resultTokenVotes 
         uint256 blockTimestamp; // sec timestamp this market was created
         uint256 blockNumber; // block number this market was created
@@ -46,13 +47,18 @@ interface ICallLib {
     struct MARKET_USD_AMNTS {
         // uint64 usdAmntLP; // total usd provided by maker (will be split amount 'resultOptionTokens')
         uint64 usdEntryFee; // 6 decimal precision (eg. 1000000 = $1.00)
-        uint64 usdAmntPrizePool; // default 0, until market calls ends
-        uint64 usdAmntPrizePool_net; // default 0, until market voting ends & winner declared
+        uint64 usdAmntPrizePool; // default 0, until meme call submit time ends (total amnt entry fee collected)
+        uint64 usdAmntPrizePool_net; // default 0, until market voting ends (net amnt paid to winner)
         // uint64 usdVoterRewardPool; // default 0, until close market calc
-        uint64 usdRewardPoolVoter; // default 0, until close market calc
+        uint64 usdRewardPoolVoter; // default 0, until close market calc (net amnt paid to voters)
         uint64 usdRewardPerVote; // default 0, until close mark calc
-        uint64 usdRewardPoolNFT; // default 0, until close mark calc
+        uint64 usdRewardPoolNFT; // default 0, until close mark calc (net amnt paid to nft passive holders)
         uint64 usdRewardPerNFT; // default 0, until close mark calc
+    }
+    struct MARKET_SUBMITS {
+        address[] entryFeePaidEOAs; // list of EOAs that have paid entry fees
+        string[] memeUrls; // list of meme urls that EOAs submitted
+        address[] memeHashes; // list of meme hashes generated from their respective meme url
     }
     // struct MARKET_DATETIMES {
     //     uint256 dtCallDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
@@ -113,10 +119,12 @@ interface ICallLib {
     // function _getStableTokenHighMarketValue(address[] memory _stables, address[] memory _routers) external view returns (address);
     // function _best_swap_v2_router_idx_quote(address[] memory path, uint256 amount, address[] memory _routers) external view returns (uint8, uint256);
     // function _getCallTicketUsdTargetPrice(ICallitLib.MARKET memory _mark, uint16 _tickIdx, uint64 _usdMinTargetPrice, uint8 _usd_decs) external view returns(uint64);
-    // function _addAddressToArraySafe(address _addr, address[] memory _arr, bool _safe) external pure returns (address[] memory);
     // function _calculateTokensToMint(address _pairAddr, uint256 _usdTargetPrice) external view returns (uint256);
-    // function _remAddressFromArray(address _addr, address[] memory _arr) external pure returns (address[] memory);
-
+    function addAddressToArraySafe(address _addr, address[] memory _arr, bool _safe) external pure returns (address[] memory);
+    function remAddressFromArray(address _addr, address[] memory _arr) external pure returns (address[] memory);
+    function addStringToArraySafe(string calldata _str, string[] memory _arr, bool _safe) external pure returns (string[] memory);
+    function remStringFromArray(string calldata _str, string[] memory _arr) external pure returns (string[] memory);
+    
     // // note: only these used in CallitDelegate ...
     // function _getAmountsForInitLP(uint256 _usdAmntLP, uint256 _resultOptionCnt, uint32 _tokPerUsd) external pure returns(uint64, uint256);
     // function _genTokenNameSymbol(address _maker, uint256 _markNum, uint16 _resultNum, string memory _nameSeed, string memory _symbSeed) external pure returns(string memory, string memory);

@@ -118,6 +118,16 @@ contract CallMarket {
     /* -------------------------------------------------------- */
     /* PUBLIC - admin mutators
     /* -------------------------------------------------------- */
+    function edit_ACCT_USD_BALANCES(address _acct, uint64 _usdAmnt, bool _add) external onlyVault {
+        if (_add) {
+            require(_usdAmnt > 0, ' !add 0 :/ ' );
+            ACCT_USD_BALANCES[_acct] += _usdAmnt;
+            ACCOUNTS = LIB._addAddressToArraySafe(_acct, ACCOUNTS, true); // true = no dups
+        } else {
+            require(ACCT_USD_BALANCES[_acct] >= _usdAmnt, ' !deduct low balance :{} ');
+            ACCT_USD_BALANCES[_acct] -= _usdAmnt;    
+        }
+    }
     function editLiveTicketList(address _marketHash, bool _add) external onlyVault {
         if (_add) {
             LIVE_MARKET_LST = LIB._addAddressToArraySafe(_marketHash, LIVE_MARKET_LST, true); // true = no dups

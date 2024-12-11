@@ -354,14 +354,22 @@ library CallLib {
     //         }
     //     }
     // }
-    // function _addAddressToArraySafe(address _addr, address[] memory _arr, bool _safe) external pure returns (address[] memory) {
-    //     // NOTE: no require checks needed
-    //     return _addAddressToArraySafe_p(_addr, _arr, _safe);
-    // }
-    // function _remAddressFromArray(address _addr, address[] memory _arr) external pure returns (address[] memory) {
-    //     // NOTE: no require checks needed
-    //     return _remAddressFromArray_p(_addr, _arr);
-    // }
+    function addAddressToArraySafe(address _addr, address[] memory _arr, bool _safe) external pure returns (address[] memory) {
+        // NOTE: no require checks needed
+        return _addAddressToArraySafe(_addr, _arr, _safe);
+    }
+    function remAddressFromArray(address _addr, address[] memory _arr) external pure returns (address[] memory) {
+        // NOTE: no require checks needed
+        return _remAddressFromArray(_addr, _arr);
+    }
+    function addStringToArraySafe(string calldata _str, string[] memory _arr, bool _safe) external pure returns (string[] memory) {
+        // NOTE: no require checks needed
+        return _addStringToArraySafe(_str, _arr, _safe);
+    }
+    function remStringFromArray(string calldata _str, string[] memory _arr) external pure returns (string[] memory) {
+        // NOTE: no require checks needed
+        return _remStringFromArray(_str, _arr);
+    }
 
     /* -------------------------------------------------------- */
     /* PRIVATE
@@ -378,33 +386,62 @@ library CallLib {
 
     //     return string(last4);
     // }
-    // function _addAddressToArraySafe_p(address _addr, address[] memory _arr, bool _safe) private pure returns (address[] memory) {
-    //     if (_addr == address(0)) { return _arr; }
+    function _addAddressToArraySafe(address _addr, address[] memory _arr, bool _safe) private pure returns (address[] memory) {
+        if (_addr == address(0)) { return _arr; }
 
-    //     // safe = remove first (no duplicates)
-    //     if (_safe) { _arr = _remAddressFromArray_p(_addr, _arr); }
+        // safe = remove first (no duplicates)
+        if (_safe) { _arr = _remAddressFromArray(_addr, _arr); }
 
-    //     // perform add to memory array type w/ static size
-    //     address[] memory _ret = new address[](_arr.length+1);
-    //     for (uint i=0; i < _arr.length;) { _ret[i] = _arr[i]; unchecked {i++;}}
-    //     _ret[_ret.length-1] = _addr;
-    //     return _ret;
-    // }
-    // function _remAddressFromArray_p(address _addr, address[] memory _arr) private pure returns (address[] memory) {
-    //     if (_addr == address(0) || _arr.length == 0) { return _arr; }
+        // perform add to memory array type w/ static size
+        address[] memory _ret = new address[](_arr.length+1);
+        for (uint i=0; i < _arr.length;) { _ret[i] = _arr[i]; unchecked {i++;}}
+        _ret[_ret.length-1] = _addr;
+        return _ret;
+    }
+    function _remAddressFromArray(address _addr, address[] memory _arr) private pure returns (address[] memory) {
+        if (_addr == address(0) || _arr.length == 0) { return _arr; }
         
-    //     // NOTE: remove algorithm does NOT maintain order & only removes first occurance
-    //     for (uint i = 0; i < _arr.length;) {
-    //         if (_addr == _arr[i]) {
-    //             _arr[i] = _arr[_arr.length - 1];
-    //             assembly { // reduce memory _arr length by 1 (simulate pop)
-    //                 mstore(_arr, sub(mload(_arr), 1))
-    //             }
-    //             return _arr;
-    //         }
+        // NOTE: remove algorithm does NOT maintain order & only removes first occurance
+        for (uint i = 0; i < _arr.length;) {
+            if (_addr == _arr[i]) {
+                _arr[i] = _arr[_arr.length - 1];
+                assembly { // reduce memory _arr length by 1 (simulate pop)
+                    mstore(_arr, sub(mload(_arr), 1))
+                }
+                return _arr;
+            }
 
-    //         unchecked {i++;}
-    //     }
-    //     return _arr;
-    // }
+            unchecked {i++;}
+        }
+        return _arr;
+    }
+    function _addStringToArraySafe(string calldata _str, string[] memory _arr, bool _safe) private pure returns (string[] memory) {
+        if (bytes(_str).length == 0) { return _arr; }
+
+        // safe = remove first (no duplicates)
+        if (_safe) { _arr = _remStringFromArray(_str, _arr); }
+
+        // perform add to memory array type w/ static size
+        string[] memory _ret = new string[](_arr.length+1);
+        for (uint i=0; i < _arr.length;) { _ret[i] = _arr[i]; unchecked {i++;}}
+        _ret[_ret.length-1] = _str;
+        return _ret;
+    }
+    function _remStringFromArray(string calldata _str, string[] memory _arr) private pure returns (string[] memory) {
+        if (bytes(_str).length == 0 || _arr.length == 0) { return _arr; }
+        
+        // NOTE: remove algorithm does NOT maintain order & only removes first occurance
+        for (uint i = 0; i < _arr.length;) {
+            if (keccak256(bytes(_str)) == keccak256(bytes(_arr[i]))) {
+                _arr[i] = _arr[_arr.length - 1];
+                assembly { // reduce memory _arr length by 1 (simulate pop)
+                    mstore(_arr, sub(mload(_arr), 1))
+                }
+                return _arr;
+            }
+
+            unchecked {i++;}
+        }
+        return _arr;
+    }
 }
