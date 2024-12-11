@@ -33,6 +33,17 @@ library CallLib {
     // function debug_log_addess(address _sender, address _address0, address _address1, address _address2) external pure {}
     // function debug_log_string(address _sender, string calldata _string0, string calldata _string1, string calldata _string2) external pure {}
     
+    function addressIsMarketMakerOrSubmitter(address _addr, address _markMaker, address[] memory _entryFeePaidEOAs) external view returns(bool, bool) {
+        bool is_maker = _markMaker == _addr; // true = found maker
+        bool is_submitter = false;
+        for (uint16 i = 0; i < entryFeePaidEOAs.length;) { // NOTE: MAX_RESULTS is type uint16 max = ~65K -> 65,535
+            is_submitter = entryFeePaidEOAs[i]; // true = found submitter
+            unchecked {i++;}
+        }
+
+        return (is_maker, is_submitter);
+    }
+
     // function grossStableBalance(address[] memory _stables, address _vault, uint8 _usd_decimals) external view returns (uint64) {
     //     // NOTE: no onlyVault needed, anyone can call this function
     //     //  ie. simply gets a gross bal of whatever tokens & for whatever addy they want

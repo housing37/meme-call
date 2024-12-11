@@ -11,8 +11,8 @@
 pragma solidity ^0.8.24;
 
 
-// import "./ICallitVault.sol"; // imports ICallLib.sol
-import "./ICallLib.sol";
+import "./ICallVault.sol"; // imports ICallLib.sol
+// import "./ICallLib.sol";
 import "./ICallConfig.sol";
 
 // interface ICallitToken {
@@ -39,15 +39,15 @@ contract CallVoter {
     ICallConfig private CONF; // set via CONF_setConfig
     ICallMarket private MARKET; // set via CONF_setConfig
     ICallLib private LIB;     // set via CONF_setConfig
-    // ICallitVault private VAULT; // set via CONF_setConfig
+    ICallVault private VAULT; // set via CONF_setConfig
     // ICallitDelegate private DELEGATE; // set via CONF_setConfig
     ICallitToken private CALL;  // set via CONF_setConfig
 
     // NOTE: required for voter hash algorithm (all need to be in the same contract)
     mapping(address => ICallLib.MARKET_VOTE[]) private ACCT_MARKET_VOTES; // store voter to their non-paid MARKET_VOTEs (ICallLib.MARKETs voted in) mapping (note: used & private until market close; live = false) ***
     mapping(address => ICallLib.MARKET_VOTE[]) public ACCT_MARKET_VOTES_PAID; // store voter to their 'paid' MARKET_VOTEs (ICallLib.MARKETs voted in) mapping (note: used & avail when market close; live = false) *
-    mapping(address => uint64[]) private MARK_HASH_RESULT_VOTES; // store market hash to result vote counts array (ie. keep private then set MARKET resultTokenVotes after close);
-    mapping(address => address) private ACCT_VOTER_HASH; // address hash used for generating _senderTicketHash in FACT.castVoteForMarketTicket
+    mapping(address => uint64[]) private MARK_HASH_RESULT_VOTES; // store market hash to result vote counts array (note: keep private then set MARKET memeResultVotes after close);
+    mapping(address => address) private ACCT_VOTER_HASH; // address hash used for generating _senderTicketHash in FACT.castVoteForMarketMeme
     uint64 private LIVE_MARKET_COUNT; // uint64 = max 18,000Q live tickets it can account for // MARKET set during LIVE_TICKETS_LST updates
 
     /* -------------------------------------------------------- */
@@ -82,7 +82,7 @@ contract CallVoter {
         CONF = ICallConfig(ADDR_CONFIG);
         MARKET = ICallMarket(CONF.ADDR_MARKET());
         LIB = ICallLib(CONF.ADDR_LIB());
-        // VAULT = ICallitVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
+        VAULT = ICallVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
         // DELEGATE = ICallitDelegate(CONF.ADDR_DELEGATE());
         CALL = ICallitToken(CONF.ADDR_CALL());
     }
@@ -147,8 +147,9 @@ contract CallVoter {
         require(_markHash != address(0), ' bad _markHash :/ ');
         return MARK_HASH_RESULT_VOTES[_markHash];
     }
-    function castVoteForMarketTicket(address _sender, address _senderTicketHash, address _markHash) external onlyFactory { // NOTE: !_deductFeePerc; reward mint
-        // require(_senderTicketHash != address(0) && _markHash != address(0), ' invalid hash :-{=} ');
+    function castVoteForMarketMeme(address _sender, address _senderMemeHash, address _markHash) external onlyFactory { // NOTE: !_deductFeePerc; reward mint
+        // require(_sender != address(0) && _senderMemeHash != address(0) && _markHash != address(0), ' invalid input :-{=} ');
+        require(ACCT_VOTER_HASH[_sender] != address(0), ' no voter hash for sender :-/ ');
         // require(IERC20(_ticket).balanceOf(msg.sender) == 0, ' no votes ;( ');
 
         // *WARNING* -> malicious actors could still monitor the chain activity (tx-by-tx)
@@ -165,28 +166,39 @@ contract CallVoter {
 
         // get MARKET & idx for _ticket & validate vote time started (NOTE: MAX_EOA_MARKETS is uint64)
         ICallLib.MARKET memory mark = MARKET.getMarketForHash(_markHash);
-        require(mark.marketUsdAmnts.usdAmntPrizePool > 0, ' calls not closed yet :/ ');
+        // require(mark.marketUsdAmnts.usdAmntPrizePool > 0, ' calls not closed yet :/ ');
+        require(mark.dtSubmitDeadline < block.timestamp, ' submit deadline !passed yet :) ');
         require(mark.marketDatetimes.dtResultVoteStart <= block.timestamp && mark.marketDatetimes.dtResultVoteEnd > block.timestamp, ' not time to vote :p ');
 
         // get ticket address from _senderTicketHash
         //  loop through all tickets in _markHash
         //   find ticket where hash(msg.sender-voter-hash + ticket) == _senderTicketHash
-        address ticket;
-        uint16 tickIdx;
-        for (uint8 i=0; i < mark.marketResults.resultOptionTokens.length;){
+        // address ticket;
+        // uint16 tickIdx;
+        address memeHash;
+        uint16 memeIdx;
+        // for (uint8 i=0; i < mark.marketResults.resultOptionTokens.length;){
+        for (uint8 i=0; i < mark.marketSubmits.memeHashes.length;){
             address[] memory toHash = new address[](2);
             toHash[0] = ACCT_VOTER_HASH[_sender];
-            toHash[1] = mark.marketResults.resultOptionTokens[i];
-            address ticketHash = _genHashOfAddies(toHash);
-            if (ticketHash == _senderTicketHash) {
-                ticket = mark.marketResults.resultOptionTokens[i];
-                tickIdx = i;
+            // toHash[1] = mark.marketResults.resultOptionTokens[i];
+            // address ticketHash = _genHashOfAddies(toHash);
+            toHash[1] = mark.marketSubmits.memeHashes[i];
+            address voteHash = _genHashOfAddies(toHash);
+
+            // if (ticketHash == _senderMemeHash) {
+            if (voteHash == _senderMemeHash) {
+                // ticket = mark.marketResults.resultOptionTokens[i];
+                // tickIdx = i;
+                memeHash = mark.marketSubmits.memeHashes[i];
+                memeIdx = i;
                 break;
             }
                 
             unchecked{i++;}
         }
-        require(ticket != address(0), ' bad ticket hash :/ '); // note: ticket holder check in LIB._addressIsMarketMakerOrCaller
+        // require(ticket != address(0), ' bad ticket hash :/ '); // note: ticket holder check in LIB._addressIsMarketMakerOrCaller
+        require(memeHash != address(0), ' bad _senderMemeHash :/ '); // note: ticket holder check in LIB._addressIsMarketMakerOrCaller
         // require(IERC20(ticket).balanceOf(msg.sender) == 0, ' no votes ;( ');
 
         // algorithmic logic...
@@ -195,24 +207,29 @@ contract CallVoter {
         //  - verify msg.sender is NOT this market's maker or caller (ie. no self voting)
         //  - store vote in struct MARKET_VOTE and push to ACCT_MARKET_VOTES
 
-        //  - verify msg.sender is NOT this market's maker or caller (ie. no self voting)
-        (bool is_maker, bool is_caller) = LIB._addressIsMarketMakerOrCaller(_sender, mark.maker, mark.marketResults.resultOptionTokens);
-        require(!is_maker && !is_caller, ' no self-voting :o ');
+        //  - verify msg.sender is NOT this market's maker or meme submitter (ie. no self voting)
+        // (bool is_maker, bool is_caller) = LIB._addressIsMarketMakerOrCaller(_sender, mark.maker, mark.marketResults.resultOptionTokens);
+        (bool is_maker, bool is_submitter) = LIB.addressIsMarketMakerOrSubmitter(_sender, mark.maker, mark.marketSubmits.entryFeePaidEOAs);
+        require(!is_maker && !is_submitter, ' no self-voting :o ');
 
         //  - verify $CALL token held/locked through out this market time period
         //  - vote count = uint(EARNED_CALL_VOTES[msg.sender])
         uint64 vote_cnt = LIB.getValidVoteCount(CALL.balanceOf_voteCnt(_sender), CONF.RATIO_CALL_TOK_PER_VOTE(), CALL.EARNED_CALL_VOTES(_sender), CALL.ACCT_CALL_VOTE_LOCK_TIME(_sender), mark.blockTimestamp);
         require(vote_cnt > 0, ' invalid voter :{=} ');
+            // LEFT OFF HERE ... legacy integration ^ (needs change/verify working with MemeCall)
 
         //  - store vote in struct MARKET
         // mark.marketResults.resultTokenVotes[tickIdx] += vote_cnt; // NOTE: write to market
         // MARKET.setHashMarket(_markHash, mark, '');
-        MARK_HASH_RESULT_VOTES[_markHash][tickIdx] += vote_cnt; // NOTE: write
+        // MARK_HASH_RESULT_VOTES[_markHash][tickIdx] += vote_cnt; // NOTE: write
+        MARK_HASH_RESULT_VOTES[_markHash][memeIdx] += vote_cnt; // NOTE: write
+        
 
         // log market vote per EOA, so EOA can claim voter fees earned (where votes = "majority of votes / winning result option")
         //  NOTE: *WARNING* if ACCT_MARKET_VOTES was public, then anyone can see the votes before voting has ended
         ACCT_MARKET_VOTES[_sender].push(ICallLib.MARKET_VOTE(_sender, ticket, tickIdx, vote_cnt, mark.maker, mark.marketNum, mark.marketHash, false)); // false = un-paid
-
+            // LEFT OFF HERE ... legacy integration ^ (needs change/verify working with MemeCall)
+            
         // // mint $CALL token reward to msg.sender
         // _mintCallToksEarned(_sender, CONF.RATIO_CALL_MINT_PER_VOTE()); // emit CallTokensEarned
 

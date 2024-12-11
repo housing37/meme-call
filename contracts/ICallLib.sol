@@ -41,7 +41,8 @@ interface ICallLib {
         uint16 winningVoteResultIdx; // calc winning idx from resultTokenVotes 
         uint256 blockTimestamp; // sec timestamp this market was created
         uint256 blockNumber; // block number this market was created
-        uint8 status; // status: 0 = open, 1 = pending, 2 = closed
+        uint8 status; // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
+        pending = submission time passed + voting time started
         bool live; // true = !closed
     }
     struct MARKET_USD_AMNTS {
@@ -59,6 +60,7 @@ interface ICallLib {
         address[] entryFeePaidEOAs; // list of EOAs that have paid entry fees
         string[] memeUrls; // list of meme urls that EOAs submitted
         address[] memeHashes; // list of meme hashes generated from their respective meme url
+        uint64[] memeResultVotes; //  uint64 max = ~18,000Q -> 18,446,744,073,709,551,615
     }
     // struct MARKET_DATETIMES {
     //     uint256 dtCallDeadline; // unix timestamp 1970, no more bets, pull liquidity from all DEX LPs generated
@@ -104,6 +106,7 @@ interface ICallLib {
     // function genMarketResultReview(address _sender, ICallitLib.MARKET memory _mark, ICallitLib.MARKET_REVIEW[] memory _makerReviews, bool _resultAgree) external view returns(ICallitLib.MARKET_REVIEW memory);
     // function getValidVoteCount(uint64 _tokensHeld_noDecs, uint32 _ratioTokPerVote, uint64 _votesEarned, uint256 _voterLockTime, uint256 _markCreateTime) external pure returns(uint64);
     // function _addressIsMarketMakerOrCaller(address _addr, address _markMaker, address[] memory _resultOptionTokens) external view returns(bool, bool);
+    function addressIsMarketMakerOrSubmitter(address _addr, address _markMaker, address[] memory _entryFeePaidEOAs) external view returns(bool, bool);
     // function _validNonWhiteSpaceString(string calldata _s) external pure returns(bool);
     // function genHashOfAddies(address[] calldata addies) external pure returns (address);
     function generateAddressHash(address host, string memory uid) external pure returns (address);
@@ -124,7 +127,7 @@ interface ICallLib {
     function remAddressFromArray(address _addr, address[] memory _arr) external pure returns (address[] memory);
     function addStringToArraySafe(string calldata _str, string[] memory _arr, bool _safe) external pure returns (string[] memory);
     function remStringFromArray(string calldata _str, string[] memory _arr) external pure returns (string[] memory);
-    
+
     // // note: only these used in CallitDelegate ...
     // function _getAmountsForInitLP(uint256 _usdAmntLP, uint256 _resultOptionCnt, uint32 _tokPerUsd) external pure returns(uint64, uint256);
     // function _genTokenNameSymbol(address _maker, uint256 _markNum, uint16 _resultNum, string memory _nameSeed, string memory _symbSeed) external pure returns(string memory, string memory);

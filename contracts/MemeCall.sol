@@ -96,7 +96,7 @@ contract MemeCall {
     /* PUBLIC - UI accessors
     /* -------------------------------------------------------- */
     // VOTER support
-    function getMyVoterHash(address _sender) external view returns(address) {
+    function getMyVoterHash() external view returns(address) {
         // *WARNING* user must have their wallet conencted to use this function
         //  ie. read request must come from user's EOA and not the RPC server default assigned for 'view' requests
         return VOTER.getVoterHash(msg.sender); // executes require checks
@@ -151,7 +151,7 @@ contract MemeCall {
     /* PUBLIC - UI mutators
     /* -------------------------------------------------------- */
     // VOTER support
-    function genMyVoterHash(address _sender) external onlyFactory {
+    function genMyVoterHash() external {
         VOTER.genVoterHash(msg.sender); // executes require checks
     }
 
@@ -196,8 +196,8 @@ contract MemeCall {
                                                 winningVoteResultIdx:0, 
                                                 blockTimestamp:block.timestamp, 
                                                 blockNumber:block.number, 
-                                                status:0}, // status: 0 = open, 1 = pending, 2 = closed
-                                                live:true // true = !closed
+                                                status:0}, // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
+                                                live:true // true = !closed | status < 2
                                                 ); 
 
         // save new market in MARKET (also logs market hash)
@@ -222,8 +222,9 @@ contract MemeCall {
     function submitMemeCallEntry(address _marketHash, string calldata _memeUrl, address _memeHash, address _altTokSpend, uint256 _altAmnt) external {
         require(_marketHash != address(0) && bytes(_memeUrl).length > 0, ' invalid args :( ');
 
-        // get market for this hash
+        // get market for this hash (verify submit deadline not passed)
         ICallLib.MARKET memory mark = MARKET.getMarketForHash(_marketHash);
+        require(mark.dtSubmitDeadline >= block.timestamp, ' submit deadline passed :/ ');
 
         // ref: legacy CallitFactory.sol -> buyCallTicketWithPromoCode
         // if sender provided any _altAmnt, attempt alt token spend / deposit to account balance
@@ -266,8 +267,9 @@ contract MemeCall {
         // TODO: emit log event
     }
 
-    function castVoteForMemeCall(address _marketHash) external {
-
+    function castVoteForMemeCall(address _senderMemeHash, address _marketHash) external {
+        require(_senderMemeHash != address(0) && _marketHash != address(0), ' invalid input :{} ');
+        VOTER.castVoteForMarketMeme(msg.sender, _senderTicketHash, _markHash); // validates ACCT_VOTER_HASH[msg.sender] exists
     }
 
     // ref: SDD_meme-comp_112524_1855.pdf
