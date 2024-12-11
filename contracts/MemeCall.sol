@@ -222,7 +222,7 @@ contract MemeCall {
         ICallLib.MARKET memory mark = MARKET.getMarketForHash(_marketHash);
 
         // get entry fee
-        uint64 usdEntryFee = mark.usdEntryFee;
+        // uint64 usdEntryFee = mark.usdEntryFee;
 
         // LEFT OFF HERE ... need to swap alt token for stable
         //      then store that stable in VAULT (in a manner that tracks entry fee paid by msg.sender for _marketHash)
@@ -251,6 +251,14 @@ contract MemeCall {
 
         // verify account usd balance can cover entry fee
         require(MARKET.ACCT_USD_BALANCES(msg.sender) >= mark.usdEntryFee, ' low balance ;{ ');
+
+        // TODO: append msg.sender and url/hash to array of EOAs paid w/ meme submission in MARKET struct
+        //       then debit  mark.usdEntryFee amount from ACCT_USD_BALANCES(sender)
+        //       then credit mark.usdEntryFee amount to ACCT_USD_BALANCES(_marketHash)
+        //       then emit event log
+        //  note: need to update MARKET struct to handle array of EOAs that have paid entry fees w/ their meme submission
+        //  note: when rewards are claimed (via voter/winner/passive), 
+        //          they will be taken directly from ACCT_USD_BALANCES(_marketHash)
     }
 
     function castVoteForMemeCall(address _marketHash) external {
