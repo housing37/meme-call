@@ -25,7 +25,7 @@ contract CallConfig {
     mapping(address => bool) public ADMINS; // enable/disable admins (for promo support, etc)
     string public constant tVERSION = '0.0';
     address public ADDR_LIB = address(0x437dedd662736d6303fFB7ACd321966f4a81da3d); // CallitLib v0.0
-    // address public ADDR_VAULT = address(0xc82D3e9Ed0B92EF0a6273090DC7F79EF2F53ACa4); // CallitVault v0.53
+    address public ADDR_VAULT = address(0xc82D3e9Ed0B92EF0a6273090DC7F79EF2F53ACa4); // CallitVault v0.0
     // address public ADDR_DELEGATE = address(0xB4300bCdE9BE07B3057C36D1F05BBb8F0D0128b8); // CallitDelegate v0.50
     // address public ADDR_CALL = address(0x200F9C731c72Dce8974B28B52d39c20381efb37e); // CallitToken v0.21
     // address public ADDR_FACT = address(0x680F787373C173FA761cbCf9FbAbF94794a84180); // CallitFactory v0.68
@@ -87,11 +87,11 @@ contract CallConfig {
 
         // NOTE: make sure everything is done and set (above) before updating contract configs
         ISetConfig(ADDR_LIB).CONF_setConfig(_conf); // not in LIB
-        // ISetConfig(ADDR_VAULT).CONF_setConfig(_conf);
+        ISetConfig(ADDR_VAULT).CONF_setConfig(_conf);
         // ISetConfig(ADDR_DELEGATE).CONF_setConfig(_conf);
         // ISetConfig(ADDR_CALL).CONF_setConfig(_conf);
         // ISetConfig(ADDR_FACT).CONF_setConfig(_conf);
-        // ISetConfig(ADDR_VOTER).CONF_setConfig(_conf);
+        ISetConfig(ADDR_VOTER).CONF_setConfig(_conf);
         ISetConfig(ADDR_MARKET).CONF_setConfig(_conf);
 
         // reset configs used in this contract

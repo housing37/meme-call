@@ -10,6 +10,12 @@
 //  uint64 max = ~18,000Q -> 18,446,744,073,709,551,615
 pragma solidity ^0.8.24;
 
+// inherited contracts (remix)
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
+
+// local _ $ npm install @openzeppelin/contracts
+import "./node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import "./ICallConfig.sol";
 
 contract MemeCall {
@@ -72,7 +78,7 @@ contract MemeCall {
         MARKET = ICallMarket(CONF.ADDR_MARKET());
         VOTER = ICallVoter(CONF.ADDR_VOTER());
         LIB = ICallLib(CONF.ADDR_LIB());
-        // VAULT = ICallitVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
+        VAULT = ICallVault(CONF.ADDR_VAULT()); // set via CONF_setConfig
         // DELEGATE = ICallitDelegate(CONF.ADDR_DELEGATE());
         // CALL = ICallitToken(CONF.ADDR_CALL());
     }
@@ -172,7 +178,7 @@ contract MemeCall {
         require(mark_num <= CONF.MAX_EOA_MARKETS(), ' > MAX_EOA_MARKETS :O ');
 
         // save this market and emit log (generates new market hash)
-        ICallitLib.MARKET memory mark = ICallitLib.MARKET({maker:_sender, 
+        ICallLib.MARKET memory mark = ICallLib.MARKET({maker:_sender, 
                                                 marketNum:mark_num, 
                                                 marketHash:LIB.generateAddressHash(msg.sender, string(abi.encodePacked(mark_num))),
                                                 topic:_topic,
@@ -220,23 +226,31 @@ contract MemeCall {
 
         // LEFT OFF HERE ... need to swap alt token for stable
         //      then store that stable in VAULT (in a manner that tracks entry fee paid by msg.sender for _marketHash)
-        
-            // ref: legacy CallitFactory.sol -> buyCallTicketWithPromoCode
-            // // if sender provided 0 usd amnt, attempt alt token spend / deposit to account balance
-            // //  else, simply attempt to use curr account balance
-            // if (_usdAmnt == 0) { // use alt token
-            //     require(_altTokSpend != address(0x0), ' alt tok required :/ ');
+        //  Q: does meme call need to use "mapping(address => uint64) public ACCT_USD_BALANCES;"?
+        //      and support native PLS tranfer deposits using "fallback()"?
 
-            //     // get alt tokens from sender EOA (fails/reverts if EOA doesn't do approval first)
-            //     //  then perform swap from alt to stable & store in vault
-            //     //  then set usd deposit amnt to usd amnt input var & get sender's new acct balance
-            //     IERC20(_altTokSpend).transferFrom(msg.sender, address(VAULT), _altAmnt);
-            //     _usdAmnt = VAULT.deposit(msg.sender, _altTokSpend, _altAmnt);
-            // }
-            // require(CONFM.ACCT_USD_BALANCES(msg.sender) >= _usdAmnt, ' low balance ;{ ');
+        // ref: legacy CallitFactory.sol -> buyCallTicketWithPromoCode
+        // if sender provided any _altAmnt, attempt alt token spend / deposit to account balance
+        //  else, simply attempt to use curr account balance
+        uint64 usdDepositVal;
+        if (_altAmnt > 0) { // use alt token for deposit, else just check acct balance
+            require(_altTokSpend != address(0x0), ' alt tok required :/ ');
 
+            // validate EOA prior alt approval from client side
+            require(IERC20(_altTokSpend).allowance(msg.sender, address(this)) >= _altAmnt, ' need alt approval');
 
+            // get alt tokens from sender EOA (fails/reverts if EOA doesn't do approval first)
+            IERC20(_altTokSpend).transferFrom(msg.sender, address(VAULT), _altAmnt);
 
+            // swap from alt to stable & store in vault (updates sender's MARKET acct balance)
+            // LEFT OFF HERE .. need to store stable in VAULT
+            //  1) in a manner that tracks entry fee paid by msg.sender for _marketHash
+            //  2) in a manner that allows EOAs to claim USD rewards held
+            usdDepositVal = VAULT.deposit(msg.sender, _altTokSpend, _altAmnt);
+        }
+
+        // verify account usd balance can cover entry fee
+        require(MARKET.ACCT_USD_BALANCES(msg.sender) >= mark.usdEntryFee, ' low balance ;{ ');
     }
 
     function castVoteForMemeCall(address _marketHash) external {
