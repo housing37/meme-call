@@ -6,6 +6,7 @@
 // NOTE: uint type precision ...
 //  uint8 max = 255
 //  uint16 max = ~65K -> 65,535
+//  uint24 max = ~16M -> 16,777,216
 //  uint32 max = ~4B -> 4,294,967,295
 //  uint64 max = ~18,000Q -> 18,446,744,073,709,551,615
 pragma solidity ^0.8.24;
@@ -33,7 +34,7 @@ contract CallVoter {
     // address public constant BURN_ADDR = address(0x0000000000000000000000000000000000000369);
     
     /* GLOBALS (CALLIT) */
-    string public tVERSION = '0.3';
+    string public tVERSION = '0.0';
     bool private FIRST_ = true;
     address public ADDR_CONFIG; // set via CONF_setConfig
     ICallConfig private CONF; // set via CONF_setConfig
@@ -148,6 +149,17 @@ contract CallVoter {
         return MARK_HASH_RESULT_VOTES[_markHash];
     }
     function castVoteForMarketMeme(address _sender, address _senderMemeHash, address _markHash) external onlyFactory { // NOTE: !_deductFeePerc; reward mint
+        // LEFT OF HERE ... 
+        //  QUESTION: is there a need for hashing/hiding votes?
+        //      in 'callit', voting was used to verify off-chain data (bring 'true' off-chain data... onto the chain)
+        //          this included the requirement that only those who voted in the majority would receive rewards for voting
+        //          this was meant to ensure that people vote 'honestly'
+        //          hence, hiding votes was required to ensure that whale based voters couldn't see the majority leaning 
+        //           in any one direction, then make a bet in the opposition & vote in that opposition & falsly earn majority of voter rewards
+        //      in 'memeCall', voting is used to select a winning meme (nothing to do with off-chain data)
+        //          SO, what happens if anyone can see the votes as they come in? can any manipulation or exploit occur?
+        //            if not, do we need a seperate VOTE.sol contract that the public can't read / decompile to see the hash struct?
+
         // require(_sender != address(0) && _senderMemeHash != address(0) && _markHash != address(0), ' invalid input :-{=} ');
         require(ACCT_VOTER_HASH[_sender] != address(0), ' no voter hash for sender :-/ ');
         // require(IERC20(_ticket).balanceOf(msg.sender) == 0, ' no votes ;( ');
@@ -229,7 +241,7 @@ contract CallVoter {
         //  NOTE: *WARNING* if ACCT_MARKET_VOTES was public, then anyone can see the votes before voting has ended
         ACCT_MARKET_VOTES[_sender].push(ICallLib.MARKET_VOTE(_sender, ticket, tickIdx, vote_cnt, mark.maker, mark.marketNum, mark.marketHash, false)); // false = un-paid
             // LEFT OFF HERE ... legacy integration ^ (needs change/verify working with MemeCall)
-            
+
         // // mint $CALL token reward to msg.sender
         // _mintCallToksEarned(_sender, CONF.RATIO_CALL_MINT_PER_VOTE()); // emit CallTokensEarned
 
