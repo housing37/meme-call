@@ -148,6 +148,74 @@ contract CallVoter {
         require(_markHash != address(0), ' bad _markHash :/ ');
         return MARK_HASH_RESULT_VOTES[_markHash];
     }
+    function castVoteForMarketMeme(address _sender, address _memeHash, address _markHash) external onlyFactory { // NOTE: !_deductFeePerc; reward mint
+        // LEFT OF HERE ... 
+        //  QUESTION: is there a need for hashing/hiding votes?
+        //      in 'callit', voting was used to verify off-chain data (bring 'true' off-chain data... onto the chain)
+        //          this included the requirement that only those who voted in the majority would receive rewards for voting
+        //          this was meant to ensure that people vote 'honestly'
+        //          hence, hiding votes was required to ensure that whale based voters couldn't see the majority leaning 
+        //           in any one direction, then make a bet in the opposition & vote in that opposition & falsly earn majority of voter rewards
+        //      in 'memeCall', voting is used to select a winning meme (nothing to do with off-chain data)
+        //          SO, what happens if anyone can see the votes as they come in? can any manipulation or exploit occur?
+        //            if not, do we need a seperate VOTE.sol contract that the public can't read / decompile to see the hash struct?
+
+        require(_sender != address(0) && _memeHash != address(0) && _marketHash != address(0), ' invalid input :{} ');
+
+        // get MARKET & idx for _ticket & validate vote time started (NOTE: MAX_EOA_MARKETS is uint64)
+        ICallLib.MARKET memory mark = MARKET.getMarketForHash(_markHash);
+        // require(mark.marketUsdAmnts.usdAmntPrizePool > 0, ' calls not closed yet :/ ');
+
+        // validate competition submission time has lapsed
+        require(mark.dtSubmitDeadline < block.timestamp, ' submit deadline !passed yet :) ');
+        
+        // set/ensure market status is 'pending'
+        // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
+        mark.status = 1; 
+            
+        
+        // validate ‘voter status’: _sender has enough voter tokens AND was previous comp winner
+        // ... LEFT OFF HERE
+
+        // algorithmic logic...
+        //  - verify msg.sender is NOT this market's maker or meme submitter (ie. no self voting)
+        //  - verify $CALL token held/locked through out this market time period
+        //  - max vote count = EOA earned vote count
+        //  - store vote in struct MARKET_VOTE and push to ACCT_MARKET_VOTES
+
+        // verify msg.sender is NOT this market's maker or meme submitter (ie. no self voting)
+        (bool is_maker, bool is_submitter) = LIB.addressIsMarketMakerOrSubmitter(_sender, mark.maker, mark.marketSubmits.entryFeePaidEOAs);
+        require(!is_maker && !is_submitter, ' no self-voting :o ');
+
+        // verify $CALL token held/locked through out this market time period
+        // NOTE: this function accounts for whole number votes (ie. token count w/ no decimals)
+        //  - verifies: token count locked before mark start time (mark.blockTimestamp)
+        //  - calc & returns active vote count (ie. token count * ratio input); w/ max vote count = EOA earned vote count
+        uint64 vote_cnt = LIB.getValidVoteCount(CALL.balanceOf_voteCnt(_sender), CONF.RATIO_CALL_TOK_PER_VOTE(), CALL.EARNED_CALL_VOTES(_sender), CALL.ACCT_CALL_VOTE_LOCK_TIME(_sender), mark.blockTimestamp);
+        require(vote_cnt > 0, ' invalid voter :{=} ');
+            // LEFT OFF HERE ... legacy integration ^ (needs change/verify working with MemeCall)
+
+        //  - store vote in struct MARKET
+        // mark.marketResults.resultTokenVotes[tickIdx] += vote_cnt; // NOTE: write to market
+        // MARKET.setHashMarket(_markHash, mark, '');
+        // MARK_HASH_RESULT_VOTES[_markHash][tickIdx] += vote_cnt; // NOTE: write
+        MARK_HASH_RESULT_VOTES[_markHash][memeIdx] += vote_cnt; // NOTE: write
+        
+
+        // log market vote per EOA, so EOA can claim voter fees earned (where votes = "majority of votes / winning result option")
+        //  NOTE: *WARNING* if ACCT_MARKET_VOTES was public, then anyone can see the votes before voting has ended
+        ACCT_MARKET_VOTES[_sender].push(ICallLib.MARKET_VOTE(_sender, ticket, tickIdx, vote_cnt, mark.maker, mark.marketNum, mark.marketHash, false)); // false = un-paid
+            // LEFT OFF HERE ... legacy integration ^ (needs change/verify working with MemeCall)
+
+        // // mint $CALL token reward to msg.sender
+        // _mintCallToksEarned(_sender, CONF.RATIO_CALL_MINT_PER_VOTE()); // emit CallTokensEarned
+
+        // event MarketTicketVote
+
+        // NOTE: -> DO NOT want to emit event log for casting votes 
+        //  this will allow people to see majority votes before voting       
+
+    }
     function castVoteForMarketMeme(address _sender, address _senderMemeHash, address _markHash) external onlyFactory { // NOTE: !_deductFeePerc; reward mint
         // LEFT OF HERE ... 
         //  QUESTION: is there a need for hashing/hiding votes?
@@ -272,5 +340,5 @@ contract CallVoter {
         // Cast the resulting hash to an address, similar to before
         address hashAddy = address(uint160(uint256(hash))); // note: triple cast correct & required
         return hashAddy;
-    }
+    } 
 }

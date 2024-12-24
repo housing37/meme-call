@@ -10,7 +10,8 @@ interface ICallVoter {
     // mutators
     function genVoterHash(address _sender) external;
     function set_LIVE_MARKET_COUNT(uint64 _cnt) external;
-    function castVoteForMarketMeme(address _sender, address _senderTicketHash, address _markHash) external;
+    // function castVoteForMarketMeme(address _sender, address _senderTicketHash, address _markHash) external;
+    function castVoteForMarketMeme(address _sender, address _memeHash, address _markHash) external;
     function moveMarketVoteToPaid(address _sender, uint64 _idxMove, ICallLib.MARKET_VOTE calldata _m_vote) external;
 }
 interface ICallMarket {

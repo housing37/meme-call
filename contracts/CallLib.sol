@@ -175,20 +175,20 @@ library CallLib {
     //     disagreeCnt = !_resultAgree ? disagreeCnt+1 : disagreeCnt;
     //     return (ICallitLib.MARKET_REVIEW(_sender, _resultAgree, _mark.maker, _mark.marketNum, _mark.marketHash, agreeCnt, disagreeCnt, reviewCnt));
     // }
-    // function getValidVoteCount(uint64 _tokensHeld_noDecs, uint32 _ratioTokPerVote, uint64 _votesEarned, uint256 _voterLockTime, uint256 _markCreateTime) external pure returns(uint64) {
-    //     // calc organic votes held based on ratio input & add to votes earned input
-    //     uint64 votes_held =  _tokensHeld_noDecs * _ratioTokPerVote;
-    //     _votesEarned += votes_held;
+    function getValidVoteCount(uint64 _tokensHeld_noDecs, uint32 _ratioTokPerVote, uint64 _votesEarned, uint256 _voterLockTime, uint256 _markCreateTime) external pure returns(uint64) {
+        // calc organic votes held based on ratio input & add to votes earned input
+        uint64 votes_held =  _tokensHeld_noDecs * _ratioTokPerVote;
+        _votesEarned += votes_held;
 
-    //     // NOTE: this function accounts for whole number votes (ie. no decimals)
-    //     // if indeed locked && locked before _mark start time, calc & return active vote count
-    //     if (_voterLockTime > 0 && _voterLockTime <= _markCreateTime) {
-    //         uint64 votes_active = _tokensHeld_noDecs >= _votesEarned ? _votesEarned : _tokensHeld_noDecs;
-    //         return votes_active;
-    //     }
-    //     else
-    //         return 0; // return no valid votes
-    // }
+        // NOTE: this function accounts for whole number votes (ie. no decimals)
+        // if indeed locked && locked before _mark start time, calc & return active vote count
+        if (_voterLockTime > 0 && _voterLockTime <= _markCreateTime) {
+            uint64 votes_active = _tokensHeld_noDecs >= _votesEarned ? _votesEarned : _tokensHeld_noDecs;
+            return votes_active;
+        }
+        else
+            return 0; // return no valid votes
+    }
     // function _addressIsMarketMakerOrCaller(address _addr, address _markMaker, address[] memory _resultOptionTokens) external view returns(bool, bool) {
     //     bool is_maker = _markMaker == _addr; // true = found maker
     //     bool is_caller = false;
@@ -330,11 +330,29 @@ library CallLib {
         address generatedAddress = address(uint160(uint256(hash)));
         return generatedAddress;
     }
-    // function _perc_of_uint64(uint16 _perc, uint64 _num) public pure returns (uint64) {
-    //     require(_perc <= 10000, 'err: invalid percent');
-    //     // return _perc_of_uint64_unchecked(_perc, _num);
-    //     return (_num * uint64(_perc * 100)) / 1000000; // chatGPT equation
-    // }
+    function _perc_of_uint64(uint16 _perc, uint64 _num) public pure returns (uint64) {
+        require(_perc <= 10000, 'err: invalid percent');
+        // return _perc_of_uint64_unchecked(_perc, _num);
+        return (_num * uint64(_perc * 100)) / 1000000; // chatGPT equation
+
+        // NOTE: chatGPT_122024 ...
+        //  Your function multiplies the percentage by 100 
+        //   because it was designed to work with a specific scaling 
+        //   to handle precision and ensure proper division. Let’s break it down:
+        // Scaling the Percentage:
+        //  _perc * 100: This scales the percentage (originally with 2 decimal places) to avoid precision loss during multiplication. For example:
+        //  If _perc = 1234 (representing 12.34%), multiplying by 100 makes it 123400.
+        // Adjusting the Denominator:
+        //  Division by 1000000 is used to bring the result back to the correct scale:
+        //  100 for the percentage scaling.
+        //  10000 for the decimal base (to allow for 2 decimal places).
+        // Simplified Calculation:
+        //  If _perc already represents a percentage with 2 decimal places (e.g., 1234 for 12.34%), the additional scaling by 100 is unnecessary. The denominator could simply be 10000.
+        // Why It’s Overcomplicated:
+        //  The multiplication by 100 and the larger denominator (1000000) are redundant. The formula can be simplified while retaining the same precision:
+        // Simplified: 
+        //  return uint64((_num * uint256(_perc)) / 10000);
+    }
     // function _perc_of_uint64_unchecked(uint32 _perc, uint64 _num) external pure returns (uint64) {
     //     // require(_perc <= 10000, 'err: invalid percent');
     //     // uint32 aux_perc = _perc * 100; // Multiply by 100 to accommodate decimals

@@ -18,6 +18,15 @@ import "./node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./ICallConfig.sol";
 
+interface ICallitToken {
+    // function ACCT_CALL_VOTE_LOCK_TIME(address _key) external view returns(uint256); // public
+    // function EARNED_CALL_VOTES(address _key) external view returns(uint64); // public
+    function mintCallToksEarned(address _receiver, uint256 _callAmntMint, uint64 _callVotesEarned, address _sender) external;
+    // function decimals() external pure returns (uint8);
+    // function pushAcctMarketReview(ICallitLib.MARKET_REVIEW memory _marketReview, address _maker) external;
+    // function getMarketReviewsForMaker(address _maker) external view returns(ICallitLib.MARKET_REVIEW[] memory);
+}
+
 contract MemeCall {
     /* -------------------------------------------------------- */
     /* GLOBALS (STORAGE)
@@ -196,8 +205,8 @@ contract MemeCall {
                                                 winningVoteResultIdx:0, 
                                                 blockTimestamp:block.timestamp, 
                                                 blockNumber:block.number, 
-                                                status:0}, // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
-                                                live:true // true = !closed | status < 2
+                                                status:0, // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
+                                                live:true} // true = !closed | status < 2
                                                 ); 
 
         // save new market in MARKET (also logs market hash)
@@ -267,10 +276,60 @@ contract MemeCall {
         // TODO: emit log event
     }
 
-    function castVoteForMemeCall(address _senderMemeHash, address _marketHash) external {
-        require(_senderMemeHash != address(0) && _marketHash != address(0), ' invalid input :{} ');
-        VOTER.castVoteForMarketMeme(msg.sender, _senderTicketHash, _markHash); // validates ACCT_VOTER_HASH[msg.sender] exists
+    // ref: SDD_meme-comp_112524_1855.pdf
+    // When any competition submission time has lapsed ... 
+    // - “Voters” may then choose to vote for a winner
+    // *NOTE*: Requirements (x2) for EOAs to retain ‘voter status’ ...
+    //  1) EOA must currently hold a ‘certain min amount’ of voter tokens
+    //      - may be freely purchased from open market
+    //  2) EOA must have won a previous competition in the past 
+    //      - note: this is a ‘non-transferable’ value set
+    // LEFT OFF HERE ... algo options to ensure user CANNOT exploit the ability to earn voter tokens
+    //  ALGORITHM_1: LEFT OFF HERE ... need some ways to discourage creating fake markets and votes
+    //                  1) make the contract service fee >= # of entries * current $CALL/USD market price
+    //                   this would make minting $CALL voter tokens more expensive than simply buying it from the dexes
+    //                  2) track 'voter status': vote count & win count requirements (ALGORITHM_2 below)
+    //                      - ratio vote count of $CALL voter tokens held? (ie. 1vote:1token; ratio set by keeper; no self-voting)
+    //                          - creates most demand for $CALL to be held off the market
+    //                          - creates most risk for whales to acquire $CALL and manipulate voting
+    //                              making $CALL voter token minting more expensive than buying from dexes, mitigates this risk
+    //                          - voting EOAs can retain more voting weight than others (relative to market)
+    //                          - voting EOAs can earn larger % of prize pool than others    
+    //  ALGORITHM_2: retained 'voter status': vote count & win count requirements
+    //      NOTE: this algo doesn't fully solve the problem in algo_1 above
+    //      How many votes does a retained 'voter status' EOA get ...
+    //          - ratio vote count of $CALL voter tokens held per comp win count? (ie. 1vote:1token / win; ratio set by keeper; no self-voting)
+    //              - creates limited demand for $CALL to be held off the market (incentive to hold is bound to win count)
+    //              - creates limited risk for whales to acquire $CALL and manipulate voting (must also acquire wins)
+    //              - voting EOAs can retain more voting weight than others (relative to market)
+    //              - voting EOAs can earn larger % of prize pool than others
+    //          - ratio vote count of $CALL voter tokens held? (ie. 1vote:1token; ratio set by keeper; no self-voting)
+    //              - creates most demand for $CALL to be held off the market
+    //              - creates most risk for whales to acquire $CALL and manipulate voting
+    //              - voting EOAs can retain more voting weight than others (relative to market)
+    //              - voting EOAs can earn larger % of prize pool than others
+    //          - one vote count per competition win count? (ie. 1vote:1win; no self-voting)
+    //              - creates limited demand for $CALL to be held off the market (only relative to win count)
+    //              - creates most risk for whales to acquire wins and manipulate voting (even w/ no self-voting)
+    //              - voting EOAs can retain more voting weight than others
+    //              - voting EOAs can earn larger % of prize pool than others
+    //          - one vote count per comptition winner? (ie. 1vote:1winner; no self-voting)
+    //              - creates minimal demand for $CALL to be held off the market (only enough to vote once)
+    //              - creates limited risk for whales to acquire wins and manipulate voting (even w/ no self-voting)
+    //              - voting EOAs all have the same voting weight
+    //              - voting EOAs all earn same % of prize pool
+    function castVoteForMemeCall(address _memeHash, address _marketHash) external {
+        // require(_memeHash != address(0) && _marketHash != address(0), ' invalid input :{} ');
+        // validates input params & ACCT_VOTER_HASH[msg.sender] exists
+        ICallLib.MARKET memory mark = VOTER.castVoteForMarketMeme(msg.sender, _memeHash, _markHash);
+
+        // reset HASH_MARKET with this mark changes
+        MARKET.setHashMarket(_marketHash, mark, ''); // '' = DO NOT add markHash to array for category in "mapping(string => address[]) CATEGORY_MARK_HASHES"
     }
+    // function castVoteForMemeCall(address _senderMemeHash, address _marketHash) external {
+    //     require(_senderMemeHash != address(0) && _marketHash != address(0), ' invalid input :{} ');
+    //     VOTER.castVoteForMarketMeme(msg.sender, _senderTicketHash, _markHash); // validates ACCT_VOTER_HASH[msg.sender] exists
+    // }
 
     // ref: SDD_meme-comp_112524_1855.pdf
     // After voting is complete for any given competition (ie. the competition is now ‘closed’) 
@@ -281,6 +340,8 @@ contract MemeCall {
         // - voters get minted 'some amount’ of voter token for each competition vote 
         // - voters earn a small % of each prize pool they voted in
         //      note: the ‘competition maker’ earns an extra small % of that prize pool
+
+        // _mintCallToksEarned(address _receiver, uint64 _callAmnt);
     }
 
     // ref: SDD_meme-comp_112524_1855.pdf
@@ -293,6 +354,8 @@ contract MemeCall {
         // - winners get minted 'some amount’ of voter token for each competition won 
         // - winners earn a large % of price pool won
         // - winners get their meme minted into an NFT
+
+        // _mintCallToksEarned(address _receiver, uint64 _callAmnt);
     }
 
     // ref: SDD_meme-comp_112524_1855.pdf
@@ -308,11 +371,15 @@ contract MemeCall {
         //      or should the rewards be transferrable along with the NFT?
     }
 
-
-
     /* -------------------------------------------------------- */
     /* PRIVATE - supporting
     /* -------------------------------------------------------- */
-
+    function _mintCallToksEarned(address _receiver, uint64 _callAmnt) private {
+        // mint _callAmnt $CALL to _receiver & log $CALL votes earned
+        //  NOTE: _callAmnt decimals should be accounted for on factory invoking side
+        //      allows for factory minting fractions of a token if needed
+        CALL.mintCallToksEarned(_receiver, _callAmnt * 10**uint8(CALL.decimals()), _callAmnt, msg.sender); 
+            // NOTE: updates CALL.EARNED_CALL_VOTES & emits CallTokensEarned
+    }
 
 }

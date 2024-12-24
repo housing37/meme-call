@@ -42,7 +42,6 @@ interface ICallLib {
         uint256 blockTimestamp; // sec timestamp this market was created
         uint256 blockNumber; // block number this market was created
         uint8 status; // status: 0=open (submit started), 1=pending (submit time passed + vote started), 2=closed (vote time passed)
-        pending = submission time passed + voting time started
         bool live; // true = !closed
     }
     struct MARKET_USD_AMNTS {
@@ -104,7 +103,7 @@ interface ICallLib {
 
     // // note: only these used in CallitFactory ... (maybe less after CallitDelegate integration)    
     // function genMarketResultReview(address _sender, ICallitLib.MARKET memory _mark, ICallitLib.MARKET_REVIEW[] memory _makerReviews, bool _resultAgree) external view returns(ICallitLib.MARKET_REVIEW memory);
-    // function getValidVoteCount(uint64 _tokensHeld_noDecs, uint32 _ratioTokPerVote, uint64 _votesEarned, uint256 _voterLockTime, uint256 _markCreateTime) external pure returns(uint64);
+    function getValidVoteCount(uint64 _tokensHeld_noDecs, uint32 _ratioTokPerVote, uint64 _votesEarned, uint256 _voterLockTime, uint256 _markCreateTime) external pure returns(uint64);
     // function _addressIsMarketMakerOrCaller(address _addr, address _markMaker, address[] memory _resultOptionTokens) external view returns(bool, bool);
     function addressIsMarketMakerOrSubmitter(address _addr, address _markMaker, address[] memory _entryFeePaidEOAs) external view returns(bool, bool);
     // function _validNonWhiteSpaceString(string calldata _s) external pure returns(bool);
