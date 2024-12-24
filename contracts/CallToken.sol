@@ -190,4 +190,39 @@ contract CallToken is ERC20, Ownable {
         uint64 convertedValue = uint64(value);
         return convertedValue;
     }
+
+    // // HOUSE_122024
+    // //  NOTE: adding taxes in ERC20 contract transfers is NOT recommended, due to dex trading issues
+    // uint16 public PERC_TAX = 690; // 690 = 6.90% | 10000 = %100.00 | 1 = 00.01% | 0 = 00.00%
+    // address owner = address(0x123);
+    // function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+    //     // calc perc value taxes
+    //     uint256 perc_val = _perc_of_uint256(PERC_TAX, value);
+
+    //     // alter value (take out percent value taxes)
+    //     uint256 alt_val = value - perc_val;
+
+    //     // send taxes to owner (so owner can manually add to LP)
+    //     super.transferFrom(from, owner, perc_val);
+
+    //     // invoke transferFrom w/ taxes taken out
+    //     return super.transferFrom(from, to, alt_val);
+    // }
+    // function transfer(address to, uint256 value) public override returns (bool) {
+    //     // calc perc value taxes
+    //     uint256 perc_val = _perc_of_uint256(PERC_TAX, value);
+
+    //     // alter value (take out percent value taxes)
+    //     uint256 alt_val = value - perc_val;
+            
+    //     // send taxes to owner (so owner can manually add to LP)
+    //     super.transfer(owner, perc_val);
+
+    //     // invoke transfer w/ taxes taken out
+    //     return super.transfer(to, alt_val);
+    // }
+    // function _perc_of_uint256(uint16 _perc, uint256 _num) private pure returns (uint256) {
+    //     require(_perc <= 10000, "err: invalid percent");
+    //     return (_num * uint256(_perc)) / 10000;
+    // }
 } 
