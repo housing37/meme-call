@@ -284,7 +284,7 @@ contract MemeCall {
     //      - may be freely purchased from open market
     //  2) EOA must have won a previous competition in the past 
     //      - note: this is a ‘non-transferable’ value set
-    // LEFT OFF HERE ... algo options to ensure user CANNOT exploit the ability to earn voter tokens
+    // 122324: LEFT OFF HERE ... algo options to ensure user CANNOT exploit the ability to earn voter tokens
     //  ALGORITHM_1: LEFT OFF HERE ... need some ways to discourage creating fake markets and votes
     //                  1) make the contract service fee >= # of entries * current $CALL/USD market price
     //                   this would make minting $CALL voter tokens more expensive than simply buying it from the dexes
