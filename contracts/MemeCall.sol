@@ -279,20 +279,33 @@ contract MemeCall {
     // ref: SDD_meme-comp_112524_1855.pdf
     // When any competition submission time has lapsed ... 
     // - “Voters” may then choose to vote for a winner
-    // *NOTE*: Requirements (x2) for EOAs to retain ‘voter status’ ...
-    //  1) EOA must currently hold a ‘certain min amount’ of voter tokens
+    // *NOTE*: 2 Requirements for EOAs to retain ‘voter status’ ...
+    //  1) EOA must have won a previous competition in the past 
+    //      - note: this is a ‘non-transferable’ value set (mitigates whales from acquiring tokens and controlling votes)
+    //      - each EOA winner gets exactly 1 vote
+    //  2) EOA winner must currently hold a ‘certain min amount’ of voter tokens
     //      - may be freely purchased from open market
-    //  2) EOA must have won a previous competition in the past 
-    //      - note: this is a ‘non-transferable’ value set
+    //      - EOA voter payout ($) is bound to voter token holdings (ie. payout = prize pool % / token)
+    //      - EOA voter weight (#) is bound to voter token holdings (ie. weight = 1vote / token)
+    //          OR 
+    //      - each EOA winner gets exactly 1 vote (regardless of voter token holdings)
+    //         NOTE: opens risk of milicious actors to acquire winning EOAs (ie. to increase voting weight)
+    //              HOWEVER, voting weight DOES NOT matter since payout is bound to token holdings
+    //                  HENCE, there's no benefit from acquiring winning addies & controlling comp results
+    //
+    // *NOTE*: should have the ability to track/view voters for market makers (ie. public mapping of some sort)
+    //          this is so the public can see/detect if a market maker is constantly voting for themselves
+    //           (ie. controlling the votes/winners in their market history and decide not to pay entry fee)
+
     // 122324: LEFT OFF HERE ... algo options to ensure user CANNOT exploit the ability to earn voter tokens
     //  ALGORITHM_1: LEFT OFF HERE ... need some ways to discourage creating fake markets and votes
     //                  1) make the contract service fee >= # of entries * current $CALL/USD market price
-    //                   this would make minting $CALL voter tokens more expensive than simply buying it from the dexes
+    //                      - this makes $CALL voter token minting more expensive than buying from dexes
     //                  2) track 'voter status': vote count & win count requirements (ALGORITHM_2 below)
     //                      - ratio vote count of $CALL voter tokens held? (ie. 1vote:1token; ratio set by keeper; no self-voting)
     //                          - creates most demand for $CALL to be held off the market
     //                          - creates most risk for whales to acquire $CALL and manipulate voting
-    //                              making $CALL voter token minting more expensive than buying from dexes, mitigates this risk
+    //                              mitigate risk: make $CALL voter token minting more expensive than buying from dexes
     //                          - voting EOAs can retain more voting weight than others (relative to market)
     //                          - voting EOAs can earn larger % of prize pool than others    
     //  ALGORITHM_2: retained 'voter status': vote count & win count requirements
