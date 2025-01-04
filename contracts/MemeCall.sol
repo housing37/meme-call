@@ -296,7 +296,11 @@ contract MemeCall {
     // *NOTE*: should have the ability to track/view voters for market makers (ie. public mapping of some sort)
     //          this is so the public can see/detect if a market maker is constantly voting for themselves
     //           (ie. controlling the votes/winners in their market history and decide not to pay entry fee)
-
+    //
+    // *NOTE*: PROBLEM: how do you ensure people don't cheat and steal the pools by controlling votes?
+    //          1) need to ensure users can't gather voting power by gathering tokens
+    //          2) need to ensure meme creators can get info from the contract to detect cheaters before entering
+    //
     // 122324: LEFT OFF HERE ... algo options to ensure user CANNOT exploit the ability to earn voter tokens
     //  ALGORITHM_1: LEFT OFF HERE ... need some ways to discourage creating fake markets and votes
     //                  1) make the contract service fee >= # of entries * current $CALL/USD market price
